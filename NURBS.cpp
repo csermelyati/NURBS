@@ -122,7 +122,7 @@ public:
     ertekek.push_back(ertekek[ertekek.size()-1]+a);
   }
   GLdouble get(int index){
-    return ertekek[index] / ertekek[ertekek.size()];
+    return ertekek[index]==0.00?0.00:ertekek[index] / ertekek[ertekek.size()];
   }
   void set(int index, GLdouble value){
     sizes[index] = value;
@@ -143,7 +143,7 @@ public:
 CsomoErtekek U;
 std::vector<myPoint> D;
 GLint dragged = -1;
-GLdouble K = 3;
+GLint K = 3;
 
 GLdouble calcN(GLdouble j, GLdouble k, GLdouble u){
   if(k == 1.00){
@@ -175,7 +175,29 @@ myPoint calcD(GLdouble j, GLdouble l, GLdouble u, GLdouble k){
 }
 
 std::vector<myPoint> calcNURBSPoints(){ // main calsulations
+  std::vector<myPoint> ret;
+  if (D.size()<K+1) return ret;
+  
+  for (int i = 0; i < D.size()-K; i++) {
+      myPoint pontok[K+1];
+      for (int j=0; j<K+1;j++){
+	pontok[j] = D[i+j];
+      }
+      
+      std::vector<myPoint> ps(&pontok[0],&pontok[0]+K+1);
+      for (float j = 0; j < 1; j+=0.1) {
+	
+        ret.push_back(calcN(i,K,j)*calcD(i,K,j,K));
+      }
 
+    }
+}
+void printUs(){
+    for (int i = 0; i< U.size();i++){
+      std::cout << U.get(i) << ", ";
+      
+    }
+    std::cout << std::endl;
 }
 
 
@@ -202,22 +224,18 @@ void init(void)
 }
 void lineSegment(void)
 {
+	printUs();
 
 	glClear(GL_COLOR_BUFFER_BIT);
 
 	glColor3f(0.5, 0.5, 0.5);
 
-  glBegin(GL_LINE_STRIP);
-    for (int i = 0; i < D.size(); i++) {
-      glVertex2d(D[i].x, D[i].y);
-    }
-  glEnd();
-
-  glBegin(GL_POINTS);
-    for (int i = 0; i < D.size(); i++) {
-      glVertex2d(D[i].x, D[i].y);
-    }
-  glEnd();
+	glColor3f(1.0, 0.0, 0.0);
+	glBegin(GL_LINE_STRIP);
+	  for (myPoint akt : calcNURBSPoints()) {
+	    glVertex2d(akt.x, akt.y);
+	  }
+	glEnd();
 
 	glutSwapBuffers();
 }
