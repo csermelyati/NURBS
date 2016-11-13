@@ -116,7 +116,7 @@ public:
   }
   
   void set( std::vector<myPoint> a){
-    int size=a.size() + K;
+    int size=a.size() + K+2;
     std::vector<GLdouble> temp;
     for ( int i=0; i<K; i++ )
         temp.push_back ( 0 );
@@ -176,7 +176,7 @@ GLdouble alfa(GLdouble j, GLdouble l, GLdouble u){
 
 GLdouble weight(GLdouble j, GLdouble l, GLdouble u){
   //std::cout << "weight j: " << j << " l: " << l << " u: " << u << std::endl;
-  return l>0.00?alfa(j, l, u)*weight(j, l-1, u) + (1-alfa(j, l, u))*weight(j-1, l-1, u) : W[j];
+  return l>0.00?alfa(j, l, u)*weight(j, l-1, u) + (1-alfa(j, l, u))*weight(j-1, l-1, u) : W[j-1];
 }
 
 myPoint calcD(GLdouble j, GLdouble l, GLdouble u){
@@ -185,7 +185,7 @@ myPoint calcD(GLdouble j, GLdouble l, GLdouble u){
     return ((alfa(j, l, u)* weight(j, l-1, u)*calcD(j, l-1, u)) + ((1-alfa(j, l, u))* weight(j-1, l-1, u)*calcD(j-1, l-1, u)))/** (myDiv(1.00,weight(j, l, u)))*/;
   }
   else {
-    return D[j];
+    return D[j-1];
     
   }
 
