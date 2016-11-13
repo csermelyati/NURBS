@@ -105,7 +105,7 @@ std::vector<GLdouble> W;
 std::vector<myPoint> D;
 GLint dragged = -1;
 GLint selectedPoint = -1;
-GLdouble K = 3.00;
+GLdouble K = 4.00;
 
 class CsomoErtekek{
 private:
@@ -116,17 +116,17 @@ public:
   }
   
   void set( std::vector<myPoint> a){
-    int size=a.size() + K+2;
+    int size=a.size() + K;
     std::vector<GLdouble> temp;
-    for ( int i=0; i<K; i++ )
+    for ( int i=0; i<K-1; i++ )
         temp.push_back ( 0 );
 
-    for ( int i=0; i<size-2*K; i++ )
+    for ( int i=0; i<size-2*(K-1); i++ )
         temp.push_back ( i );
     GLdouble last=1;
     if ( temp.at ( temp.size()-1 ) !=0 )
         last=temp.at ( temp.size()-1 );
-    for ( int i=0; i<K; i++ )
+    for ( int i=0; i<K-1; i++ )
         temp.push_back ( last );
     sizes = temp;
   }
@@ -176,16 +176,16 @@ GLdouble alfa(GLdouble j, GLdouble l, GLdouble u){
 
 GLdouble weight(GLdouble j, GLdouble l, GLdouble u){
   //std::cout << "weight j: " << j << " l: " << l << " u: " << u << std::endl;
-  return l>0.00?alfa(j, l, u)*weight(j, l-1, u) + (1-alfa(j, l, u))*weight(j-1, l-1, u) : W[j-1];
+  return l>0.00?alfa(j, l, u)*weight(j, l-1, u) + (1-alfa(j, l, u))*weight(j-1, l-1, u) : W[j];
 }
 
 myPoint calcD(GLdouble j, GLdouble l, GLdouble u){
   //std::cout << "calcD j: " << j << " l: " << l << " u: " << u << std::endl;
   if ( l > 0.00){
-    return ((alfa(j, l, u)* weight(j, l-1, u)*calcD(j, l-1, u)) + ((1-alfa(j, l, u))* weight(j-1, l-1, u)*calcD(j-1, l-1, u)))/** (myDiv(1.00,weight(j, l, u)))*/;
+    return ((alfa(j, l, u)* weight(j, l-1, u)*calcD(j, l-1, u)) + ((1-alfa(j, l, u))* weight(j-1, l-1, u)*calcD(j-1, l-1, u)))* (myDiv(1.00,weight(j, l, u)));
   }
   else {
-    return D[j-1];
+    return D[j];
     
   }
 
