@@ -94,60 +94,66 @@ myPoint operator*(const std::vector<double> a, const std::vector<myPoint> b){
   return ret;
 }
 
-class CsomoErtekek{
-private:
-  std::vector<GLdouble> sizes;
-  std::vector<GLdouble> ertekek;
-
-  void calcErtekek(){
-    int i = 0;
-    for (GLdouble akt : sizes) {
-      if (i == 0){
-        i++;
-        continue;
-      }
-      else{
-        ertekek[i] = ertekek[i-1] + akt;
-      }
-    }
-  }
-
-public:
-  CsomoErtekek(){
-    ertekek.push_back(0.00);
-    sizes.push_back(0.00);
-  }
-  void add(GLdouble a){
-    sizes.push_back(a);
-    ertekek.push_back(ertekek[ertekek.size()-1]+a);
-  }
-  GLdouble get(int index){
-    return ertekek[index]==0.00?0.00:ertekek[index] / ertekek[ertekek.size()];
-  }
-  void set(int index, GLdouble value){
-    sizes[index] = value;
-    calcErtekek();
-  }
-  int size(){
-    return ertekek.size();
-  }
-};
-
-
 
 
 
 
 
 //std::vector<GLdouble> U;
-CsomoErtekek U;
+
+std::vector<GLdouble> W;
 std::vector<myPoint> D;
 GLint dragged = -1;
-GLint K = 3;
+GLint selectedPoint = -1;
+GLdouble K = 3.00;
+
+class CsomoErtekek{
+private:
+  std::vector<GLdouble> sizes;
+
+public:
+  CsomoErtekek(){
+  }
+  
+  void set( std::vector<myPoint> a){
+    int size=a.size() + K;
+    std::vector<GLdouble> temp;
+    for ( int i=0; i<K; i++ )
+        temp.push_back ( 0 );
+
+    for ( int i=0; i<size-2*K; i++ )
+        temp.push_back ( i );
+    GLdouble last=1;
+    if ( temp.at ( temp.size()-1 ) !=0 )
+        last=temp.at ( temp.size()-1 );
+    for ( int i=0; i<K; i++ )
+        temp.push_back ( last );
+    sizes = temp;
+  }
+  GLdouble get(int index){
+      return sizes[index];
+  }
+  int size(){
+    return sizes.size();
+  }
+};
+
+CsomoErtekek U;
+
+GLdouble myDiv(GLdouble a, GLdouble b){
+  if (a == 0.00 || b == 0.00) return 0.00;
+  return a/b;
+}
+
+
+
+
+//NURBS funcs----------------------------------------------------------------------------------------------------------------------
 
 GLdouble calcN(GLdouble j, GLdouble k, GLdouble u){
+  //std::cout << "calcN j: " << j << " k: " << k << " u: " << u << std::endl;
   if(k == 1.00){
-    if ((u>=U.get(j)) && (u<= U.get(j+1))){
+    if ((u>=U.get(j)) && (u< U.get(j+1))){
       return 1.00;
     }
     else {
@@ -156,20 +162,31 @@ GLdouble calcN(GLdouble j, GLdouble k, GLdouble u){
 
   }
   else{
-    return (((u-U.get(j))/(U.get(j+k-1)))*calcN(j, k-1, u)) + ((U.get(j+k)-u)/(U.get(j+k)-U.get(j+1))*calcN(j+1, k-1, u));
+    return ((myDiv((u-U.get(j)),(U.get(j+k-1))))*calcN(j, k-1, u)) +
+           (myDiv((U.get(j+k)-u) , (U.get(j+k)-U.get(j+1))) * calcN(j+1, k-1, u));
   }
 
 }
-GLdouble alfa(GLdouble j, GLdouble l, GLdouble u, GLdouble k){
-  return l == 0 ? 1.00 : (u - U.get(j)) / ( U.get(j+k-1)-U.get(j));
+
+
+GLdouble alfa(GLdouble j, GLdouble l, GLdouble u){
+  //std::cout << "alfa j: " << j << " l: " << l << " u: " << u << std::endl;
+  return l >0.00 ? myDiv((u - U.get(j)) , ( U.get(j+K-l)-U.get(j))) : 1.00;
 }
 
-myPoint calcD(GLdouble j, GLdouble l, GLdouble u, GLdouble k){
-  if ( l == 0.00){
-    return D[j];
+GLdouble weight(GLdouble j, GLdouble l, GLdouble u){
+  //std::cout << "weight j: " << j << " l: " << l << " u: " << u << std::endl;
+  return l>0.00?alfa(j, l, u)*weight(j, l-1, u) + (1-alfa(j, l, u))*weight(j-1, l-1, u) : W[j];
+}
+
+myPoint calcD(GLdouble j, GLdouble l, GLdouble u){
+  //std::cout << "calcD j: " << j << " l: " << l << " u: " << u << std::endl;
+  if ( l > 0.00){
+    return ((alfa(j, l, u)* weight(j, l-1, u)*calcD(j, l-1, u)) + ((1-alfa(j, l, u))* weight(j-1, l-1, u)*calcD(j-1, l-1, u)))/** (myDiv(1.00,weight(j, l, u)))*/;
   }
   else {
-    return (alfa(j, l, u, k)*calcD(j, l-1, u, k)) + ((1-alfa(j, l, u, k))*calcD(j-1, l-1, u, k));
+    return D[j];
+    
   }
 
 }
@@ -177,29 +194,26 @@ myPoint calcD(GLdouble j, GLdouble l, GLdouble u, GLdouble k){
 std::vector<myPoint> calcNURBSPoints(){ // main calsulations
   std::vector<myPoint> ret;
   if (D.size()<K+1) return ret;
-  
-  for (int i = 0; i < D.size()-K; i++) {
-      myPoint pontok[K+1];
-      for (int j=0; j<K+1;j++){
-	pontok[j] = D[i+j];
-      }
-      
-      std::vector<myPoint> ps(&pontok[0],&pontok[0]+K+1);
-      for (float j = 0; j < 1; j+=0.1) {
-	
-        ret.push_back(calcN(i,K,j)*calcD(i,K,j,K));
-      }
 
+  for (int i = 0; i < U.size()-1; i++) {
+    for (GLdouble u = U.get(i); u < U.get(i+1); u+=0.01){
+      ret.push_back(calcD(i,K-1,u));
+      
     }
+   
+
+  }
+  return ret;
+
 }
 void printUs(){
     for (int i = 0; i< U.size();i++){
       std::cout << U.get(i) << ", ";
-      
+
     }
     std::cout << std::endl;
 }
-
+//END--------------------------------------------------------------------------------------------------------------------------
 
 GLdouble rad(GLint i)
 {
@@ -224,17 +238,26 @@ void init(void)
 }
 void lineSegment(void)
 {
-	printUs();
-
 	glClear(GL_COLOR_BUFFER_BIT);
 
 	glColor3f(0.5, 0.5, 0.5);
+  glBegin(GL_POINTS);
+    for (int i=0; i < D.size();i++) {
+      if (i == selectedPoint)
+	glColor3f(0, 0.5, 0);
+      else
+	glColor3f(0.5, 0.5, 0.5);
+      glVertex2d(D[i].x, D[i].y);
+    }
+  glEnd();
 
 	glColor3f(1.0, 0.0, 0.0);
 	glBegin(GL_LINE_STRIP);
+	  std::cout << "\n";
 	  for (myPoint akt : calcNURBSPoints()) {
 	    glVertex2d(akt.x, akt.y);
 	  }
+	  std::cout << std::endl;
 	glEnd();
 
 	glutSwapBuffers();
@@ -256,36 +279,57 @@ void processMouse(GLint button, GLint action, GLint xMouse, GLint yMouse) {
 	if (button == GLUT_LEFT_BUTTON && action == GLUT_DOWN){
 		if ((i = getActivePoint1(D, xMouse, 600 - yMouse)) != -1){
 			dragged = i;
-    }
-    else{
-      D.push_back(myPoint(xMouse, 600 - yMouse));
-      if(D.size() > 1){
-        myPoint seged (D[D.size()-1]-D[D.size()-2]);
-        U.add(pow(seged.x,2.00)+pow(seged.y, 2.00));
-      }
-      glutPostRedisplay();
-    }
-  }
-	if (button == GLUT_LEFT_BUTTON && action == GLUT_UP)
+			selectedPoint = i;
+			
+			glutPostRedisplay();
+			
+		}
+		else{
+		  D.push_back(myPoint(xMouse, 600 - yMouse));
+		  W.push_back(1.00);
+		  if(D.size() > 1){
+		    myPoint seged (D[D.size()-2]-D[D.size()-1]);
+		    U.set(D);
+		  }
+		  //printUs();
+
+		  glutPostRedisplay();
+		}
+	      }
+	if (button == GLUT_LEFT_BUTTON && action == GLUT_UP){
 		dragged = -1;
+	}
+	
 }
 
 void processMouseActiveMotion(GLint xMouse, GLint yMouse) {
 	if (dragged >= 0) {
-    int index = dragged>0 ? dragged : 1;
+	  int index = dragged>0 ? dragged : 1;
 
-    D[dragged].x = xMouse;
-  	D[dragged].y = 600 - yMouse;
+	  D[dragged].x = xMouse;
+	  D[dragged].y = 600 - yMouse;
 
-    myPoint seged (D[index]-D[index-1]);
-    U.set(index-1,pow(seged.x,2.00)+pow(seged.y, 2.00));
-    if (index < D.size()-1){
-      myPoint seged (D[index]-D[index+1]);
-      U.set(index, pow(seged.x,2.00)+pow(seged.y, 2.00));
-    }
-    glutPostRedisplay();
+	  U.set(D);
+	  
+	  glutPostRedisplay();
 	}
 
+}
+
+void keyPressed (unsigned char key, int x, int y) {
+    if (selectedPoint>=0){
+     switch (key){
+	case 'w':
+	 W[selectedPoint] += 0.1;
+	 glutPostRedisplay();
+	break;
+	case 's':
+	  W[selectedPoint] -= 0.1;
+	  glutPostRedisplay();
+	break;
+	 
+    }
+   }
 }
 
 int main (int argc, char** argv)
@@ -296,6 +340,7 @@ int main (int argc, char** argv)
 	glutInitWindowPosition(100, 100);
 	glutCreateWindow("B-Spline");
 	init();
+	glutKeyboardFunc(keyPressed);
 	glutDisplayFunc(lineSegment);
 	glutMouseFunc(processMouse);
 	glutMotionFunc(processMouseActiveMotion);
