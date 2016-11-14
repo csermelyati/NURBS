@@ -329,13 +329,13 @@ void keyPressed (unsigned char key, int x, int y) {
 	break;
 	case 'q':
 	 K = K <D.size()-1? K+1:K;
-	 std::cout << K << std::endl;
+	 //std::cout << K << std::endl;
 	 U.set(D);
 	 glutPostRedisplay();
 	break;
 	case 'a':
 	 K = K>2? K-1:K;
-	 std::cout << K << std::endl;
+	 //std::cout << K << std::endl;
 	 U.set(D);
 	 glutPostRedisplay();
 	break;
