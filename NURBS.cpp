@@ -208,10 +208,10 @@ std::vector<myPoint> calcNURBSPoints(){ // main calsulations
 }
 void printUs(){
     for (int i = 0; i< U.size();i++){
-      std::cout << U.get(i) << ", ";
+      //std::cout << U.get(i) << ", ";
 
     }
-    std::cout << std::endl;
+    //std::cout << std::endl;
 }
 //END--------------------------------------------------------------------------------------------------------------------------
 
@@ -253,11 +253,11 @@ void lineSegment(void)
 
 	glColor3f(1.0, 0.0, 0.0);
 	glBegin(GL_LINE_STRIP);
-	  std::cout << "\n";
+	  //std::cout << "\n";
 	  for (myPoint akt : calcNURBSPoints()) {
 	    glVertex2d(akt.x, akt.y);
 	  }
-	  std::cout << std::endl;
+	  //std::cout << std::endl;
 	glEnd();
 
 	glutSwapBuffers();
@@ -326,6 +326,18 @@ void keyPressed (unsigned char key, int x, int y) {
 	case 's':
 	  W[selectedPoint] -= 0.1;
 	  glutPostRedisplay();
+	break;
+	case 'q':
+	 K = K <D.size()-1? K+1:K;
+	 std::cout << K << std::endl;
+	 U.set(D);
+	 glutPostRedisplay();
+	break;
+	case 'a':
+	 K = K>2? K-1:K;
+	 std::cout << K << std::endl;
+	 U.set(D);
+	 glutPostRedisplay();
 	break;
 	 
     }
